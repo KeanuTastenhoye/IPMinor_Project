@@ -1,0 +1,119 @@
+// ################################################################
+// Build script build block.
+// Used to configure the classpath for the build script itself.
+// ################################################################
+
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:2.0.5.RELEASE")
+    }
+}
+
+// ################################################################
+// Plugins.
+// ################################################################
+
+apply plugin: 'java'
+apply plugin: 'idea'
+apply plugin: 'org.springframework.boot'
+apply plugin: 'io.spring.dependency-management'
+
+// ################################################################
+// Name and version of the jar to build (running the bootjar task).
+// ################################################################
+
+bootJar {
+    baseName = 'gerecht'
+    version =  '0.1.0'
+    mainClassName = 'be.ucll.gerechten.Application'
+}
+
+// ################################################################
+// Dependencies are retrieved from repositories.
+// ################################################################
+
+repositories {
+    mavenCentral()
+}
+
+// ################################################################
+// Properties.
+// ################################################################
+
+// default is empty, a java project adds properties of its own:
+version = '1.0.0-SNAPSHOT'
+
+// version to use when compiling source
+sourceCompatibility = 1.8
+
+// version to use when generating the compiled class files,
+// default same as sourceCompatibility ( so you can usually omit it)
+targetCompatibility = 1.8
+
+// ################################################################
+// Every project and task can contain user-defined properties,
+// called extra properties, for use in the script.
+// You define them in the ext block.
+// ################################################################
+
+ext{
+    jstlVersion = '1.2' // now you can use this throughout the script
+    tomcatEmbedJasperVersion = '9.0.10'
+    ecjVersion = '4.4.2'
+}
+
+// ################################################################
+// Dependencies - project dependencies are declared within
+// this script block.
+/*
+Individual dependencies are grouped into configurations:
+    - compile: specifies the classes needed to compile the production source
+    - runtime: enumerates the dependencies needed to run the production source
+        (these include those in the compile configuration)
+    - testcompile: specifies the classes needed to compile the test source
+        (by default, the compile dependencies are used to compile the test source)
+    - testruntime: needed to run the tests (by default: includes the previous 3)
+Not always version property, because the spring boot gradle plugin utilizes the
+dependency management plugin to automatically determine the correct version,
+managed by the spring boot bill of materials (aka BOM).
+*/
+// ################################################################
+
+dependencies {
+    // The JAXB APIs are considered to be Java EE APIs, and therefore are no longer
+    // contained on the default class path in Java SE 9.
+    // In Java 11 they are completely removed from the JDK.
+    // But apparently Spring requires these in this case, if you want to make a JAR file.
+    // See https://stackoverflow.com/questions/43574426
+    // ==> Quick & dirty fix: java -jar --add-modules java.xml.bind -jar courses-0.1.0.jar
+    // ==> Better fix, add this, and make a the JAR again, so it contains the file:
+    compile "javax.xml.bind:jaxb-api:2.3.0"
+
+    // needed for Spring Boot -> embedded tomcat
+    compile("org.springframework.boot:spring-boot-starter-web")
+    // needed because we use jsp
+    // compile group: 'javax.servlet', name: 'jstl', version: '1.2'
+    // compile group: 'javax.servlet', name: 'jstl', version: jstlVersion // use the user-defined property
+    compile group: 'javax.servlet', name: 'jstl' // use the user-defined property
+    // needed because we use jsp
+    // compile group: 'org.apache.tomcat.embed', name: 'tomcat-embed-jasper', version: '9.0.10'
+    // compile group: 'org.apache.tomcat.embed', name: 'tomcat-embed-jasper', version: tomcatEmbedJasperVersion
+    compile group: 'org.apache.tomcat.embed', name: 'tomcat-embed-jasper'
+    // needed because we use jsp
+    // compile group: 'org.eclipse.jdt.core.compiler', name: 'ecj', version: '4.4.2'
+    compile group: 'org.eclipse.jdt.core.compiler', name: 'ecj', version: ecjVersion
+    // needed for JPA
+    compile("org.springframework.boot:spring-boot-starter-data-jpa")
+    compile('mysql:mysql-connector-java:8.0.13')
+    // needed for in-memory database
+    compile("com.h2database:h2")
+
+    // use actuator
+    compile("org.springframework.boot:spring-boot-starter-actuator")
+
+    // for testing
+    testCompile('org.springframework.boot:spring-boot-starter-test')
+}
